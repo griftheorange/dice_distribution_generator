@@ -3,9 +3,10 @@ import matplotlib.pyplot as plt
 import re
 import itertools
 import math
+from collections import defaultdict
 
 
-def combinations_tool(num, sides):
+def combinations_tool_orig(num, sides):
     results = {}
     line_results = []
     # Generate all combinations from set of possible die rolls, allow repeats
@@ -53,7 +54,44 @@ def combinations_tool(num, sides):
     results = {k: float(v)/float(total)*100 for k,v in results.items()}
     binomial_results = binomialize(results)
     return [results, binomial_results, str(num)+"d"+str(sides), line_results]
-        
+
+
+def conv(a, b):
+    """
+    Combine two roll results.
+    
+    > r1d2 = {1: 1, 2:1}
+    > r2d2 = conv(r1d2, r1d2)
+    > r2d2
+    {2: 1, 3: 2, 4: 1}
+    
+    > r1d6 = {v: 1 for v in range(1, 6+1)}
+    > r2d6 = conv(r1d6, r1d6)
+    > r2d6
+    {2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1}
+    
+    > r4d6 = conv(r2d6, r2d6)
+    """
+    o = defaultdict(int)
+    for r1, c1 in a.items():
+        for r2, c2 in b.items():
+            o[r1+r2] += c1*c2
+    return o
+
+def combinations_tool_conv(num, sides):
+    die = {v:1 for v in range(1, sides+1)}
+    results = {0:1}  # 1 way to make a sum of 0
+    for roll_number in range(num):
+        results = conv(results, die)
+            
+    # Map all the values to their respective proportion vs the total, make percentage 
+    total = sum(results.values())
+    results = {k: float(v)/float(total)*100 for k,v in results.items()}
+    binomial_results = binomialize(results)
+    return [results, binomial_results, str(num)+"d"+str(sides), None]  # line_results is missing
+
+combinations_tool = combinations_tool_conv
+
 def binomialize(results):
     binomial_results = {}
     last_key = None
